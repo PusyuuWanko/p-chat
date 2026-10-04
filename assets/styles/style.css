@@ -1,0 +1,1006 @@
+@charset "UTF-8";
+
+/* =====================================================================
+   デザインコンセプト: 「レトロアーケード基板 × CRT端末」
+   よくあるグラデーション/角丸のサイバーパンクUIテンプレではなく、
+   古いゲーム基板の操作パネル(多色の物理ボタン)と、ブラウン管端末の質感
+   (走査線・フラットな枠線)を組み合わせた、このサイト独自の見た目にしている。
+   ===================================================================== */
+
+/* フォント "pixel" の @font-face は index.php の <head> にあります。
+   フォントは main の中のファイルで、その住所は台帳(pusyuu_registry)から決まるため、
+   CSSには書けません。【ここに https://pusyuuwanko.com/... を書き戻さないこと】 */
+
+:root {
+  --bg: #050705;
+  --panel: #0d130d;
+  --panel-border: #1c2b1c;
+  --text: #d8ffe0;
+  --muted: #6f9678;
+
+  /* アーケード基板の「多色LED」。役割ごとに意図的に色を分ける */
+  --green: #39ff6a;   /* 自分の発言・成功・確定 */
+  --cyan: #3df3ff;    /* リンク・操作可能な要素 */
+  --magenta: #ff3df0; /* 相手の発言・通知/未読 */
+  --yellow: #fff23d;  /* 警告・シークレット等の強調 */
+  --danger: #ff5a5a;
+
+  --font-pixel: "pixel", "PixelMplus12", monospace;
+  --font-mono: "Courier New", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* window(.pchat-window)を閉じて#pchat-mcへ戻る際、sticky headerの下に
+   隠れないよう、アンカージャンプ時の着地位置にheaderぶんの余白を足す。 */
+html {
+  scroll-padding-top: 90px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  position: relative;
+  /* 画面全体にボトムナビぶんの余白を確保する */
+  padding-bottom: 78px;
+}
+
+/* .pchat-window(:target)が開いている間、window-scroll-lock.js(JS有効時のみ)が
+   付与する。背後のbody側のスクロールだけを止める(ウィンドウ自身の内部スクロール
+   には影響しない)。 */
+body.pchat-no-scroll {
+  overflow: hidden;
+}
+
+/* ごく薄い走査線(CRT端末のテクスチャ)。可読性を落とさないよう非常に薄く、
+   クリック等の操作を邪魔しないようpointer-events: noneにしている。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(57, 255, 106, 0.035) 0px,
+    rgba(57, 255, 106, 0.035) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+header,
+main,
+footer {
+  display: block;
+  position: relative;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a:hover {
+  color: var(--green);
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 2px solid var(--panel-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+header h1 {
+  margin: 0;
+  font-size: 15px;
+  font-family: var(--font-pixel);
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(57, 255, 106, 0.5);
+  letter-spacing: 0.02em;
+}
+header nav ul {
+  list-style: none;
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.link_button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--cyan);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.link_button:hover {
+  color: var(--green);
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 14px 24px;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mode-panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 0;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.mode-panel h2 {
+  font-size: 14px;
+  margin: 0 0 10px;
+  font-family: var(--font-pixel);
+  color: var(--green);
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+.mode-tabs a, .mode-tabs span.pchat-sonic-tab-link {
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-family: var(--font-pixel);
+}
+.mode-tabs a.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #04150a;
+}
+/* 音波タブはJSでのみ挿入される(sonic-tab-link.js参照)。サーバー保存の
+   無い独立した使い捨て機能であることが分かるよう、他タブのgreenとは
+   別のcyanで区別する。 */
+.mode-tabs a.pchat-sonic-tab-link {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.mode-tabs a.pchat-sonic-tab-link:hover {
+  background: var(--cyan);
+  color: #04150a;
+}
+/* 音波タブ自身のページでは<a>ではなく<span>で「今ここにいる」ことを示す
+   (自分自身へのリンクにしない)。色は上と同じcyanで塗りつぶす。 */
+.mode-tabs span.pchat-sonic-tab-link.active {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: #04150a;
+}
+
+.inline-form {
+  display: inline-block;
+  margin: 4px 8px 4px 0;
+}
+
+details > summary {
+  cursor: pointer;
+  color: var(--cyan);
+}
+details textarea {
+  width: 100%;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+}
+
+.status-label {
+  min-height: 1.4em;
+  margin: 8px 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ---- ボタン: 角丸なし・box-shadowなし・グラデーションなし。ホバー/アクティブで
+   背景色と文字色を反転させる、フラットな「基板ボタン」の操作感。 ---- */
+.button,
+.small-button {
+  display: inline-block;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  background: transparent;
+  transition: background 0.1s, color 0.1s;
+}
+
+.button {
+  padding: 10px 20px;
+  border: 2px solid var(--green);
+  color: var(--green);
+  text-decoration: none;
+  font-size: 13px;
+  margin: 4px 8px 4px 0;
+}
+.button:hover {
+  background: var(--green);
+  color: #04150a;
+}
+.button.secondary {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.button.secondary:hover {
+  background: var(--cyan);
+  color: #04150a;
+}
+
+.small-button {
+  padding: 6px 12px;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-size: 12px;
+  margin: 2px 4px 2px 0;
+}
+.small-button:hover {
+  background: var(--green);
+  color: #04150a;
+}
+.small-button.ghost {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+.small-button.ghost:hover {
+  background: var(--muted);
+  color: #04150a;
+}
+.small-button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.small-button.danger:hover {
+  background: var(--danger);
+  color: #04150a;
+}
+.small-button.pchat-sonic-active {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: #04150a;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 「入力中…」表示。従来の.note(灰色の小文字)は目立たず気付きにくかったため、
+   相手の発言色(magenta)のLEDが基板のランプのように明滅する見た目にして
+   一目で「今まさに入力されている」と分かるようにする */
+.pchat-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--magenta);
+  animation: pchat-typing-flicker 1.6s ease-in-out infinite;
+}
+.pchat-typing-indicator[hidden] {
+  display: none;
+}
+.pchat-typing-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.pchat-typing-dots i {
+  width: 6px;
+  height: 6px;
+  background: var(--magenta);
+  display: inline-block;
+  animation: pchat-typing-blink 1s steps(1, end) infinite;
+}
+.pchat-typing-dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.pchat-typing-dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pchat-typing-blink {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes pchat-typing-flicker {
+  0%, 100% { text-shadow: 0 0 4px rgba(255, 61, 240, 0.6); }
+  50% { text-shadow: 0 0 9px rgba(255, 61, 240, 0.95); }
+}
+
+.form-message {
+  width: 100%;
+  margin: 6px 0 0;
+  font-size: 12px;
+  min-height: 1.4em;
+}
+.form-message.ok {
+  color: var(--green);
+}
+.form-message.error {
+  color: var(--danger);
+}
+
+.match-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.match-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.match-row-info {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+}
+.match-row-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--panel-border);
+  background: #030603;
+}
+.match-status {
+  font-size: 12px;
+  color: var(--magenta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pchat-unread-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--magenta);
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.6;
+  width: fit-content;
+}
+/* ナビゲーションバーの「会話」アイコン上では、flexの縦積みに巻き込まれないよう
+   ボタンの右上に浮かせて表示する(.pchat-arcade-nav aは既にposition: relative)。*/
+.pchat-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: 10px;
+  margin-top: 0;
+  font-size: 10px;
+  padding: 1px 6px;
+}
+.empty-note {
+  color: var(--muted);
+  padding: 10px 4px;
+}
+
+.players-label {
+  font-weight: bold;
+  margin: 8px 0 4px;
+  color: var(--text);
+}
+
+.pchat-secret-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--yellow);
+  color: var(--yellow);
+  font-size: 10px;
+  font-weight: normal;
+  font-family: var(--font-pixel);
+  vertical-align: middle;
+}
+
+.pchat-secret-details {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--panel-border);
+}
+.pchat-secret-details summary {
+  font-size: 13px;
+}
+
+.mode-panel input[type="text"] {
+  padding: 8px;
+  border: 1px solid var(--panel-border);
+  background: #030603;
+  color: var(--text);
+  font: inherit;
+  margin-right: 6px;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  padding: 14px;
+  margin: 10px 0;
+  min-height: 240px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 80%;
+}
+.chat-message.mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.chat-message-body {
+  background: transparent;
+  border: 1px solid var(--magenta);
+  color: var(--text);
+  border-radius: 0;
+  padding: 8px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: border-color 0.6s ease;
+}
+.chat-message.mine .chat-message-body {
+  border-color: var(--green);
+}
+/* chat.jsが新着メッセージに一時的に付与するクラス(約5秒後に外され、
+   上のtransitionで元の色(--magenta/--green)へ滑らかに戻る)。 */
+.chat-message.chat-message-flash .chat-message-body {
+  border-color: var(--yellow);
+}
+.pchat-search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.chat-message-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.chat-reaction-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--panel-border);
+  background: #030603;
+  font-size: 13px;
+}
+.chat-reaction-form {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+.chat-reaction-button {
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.1s, transform 0.1s;
+}
+.chat-reaction-button:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+.chat-inline-image {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  margin-top: 4px;
+  border: 1px solid var(--panel-border);
+}
+.chat-message-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+}
+.chat-read-tick {
+  margin-left: 6px;
+  color: var(--green);
+}
+.chat-message-reply-link {
+  margin-left: 8px;
+  color: var(--cyan);
+  text-decoration: none;
+}
+.chat-message-reply-link:hover {
+  text-decoration: underline;
+}
+
+.chat-message-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 100%;
+  padding: 4px 10px;
+  margin-bottom: 3px;
+  border-left: 3px solid var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+  color: var(--muted);
+}
+.chat-message-quote.missing {
+  font-style: italic;
+}
+.chat-message-quote-sender {
+  font-weight: bold;
+  color: var(--text);
+}
+.chat-message-quote-body {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-reply-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  margin: 6px 0 0;
+  border: 1px solid var(--cyan);
+  border-left: 3px solid var(--cyan);
+  background: #030603;
+}
+.chat-reply-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 12px;
+}
+.chat-reply-preview-body.missing {
+  color: var(--muted);
+  font-style: italic;
+}
+.chat-reply-preview .small-button {
+  flex-shrink: 0;
+}
+
+.chat-send-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-send-form textarea {
+  flex: 1;
+  padding: 10px;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  resize: vertical;
+  font: inherit;
+}
+.chat-send-form textarea:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+.chat-send-form button {
+  padding: 10px 18px;
+  border: 2px solid var(--green);
+  background: transparent;
+  color: var(--green);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  cursor: pointer;
+}
+.chat-send-form button:hover {
+  background: var(--green);
+  color: #04150a;
+}
+
+.pchat-attach-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pchat-attach-form input[type="file"] {
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 100%;
+}
+.pchat-attach-form select {
+  padding: 6px 8px;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.pchat-attach-progress {
+  width: 100%;
+  height: 8px;
+  margin: 6px 0;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  overflow: hidden;
+}
+.pchat-attach-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  transition: width 0.15s linear;
+}
+
+#p2p-host-block textarea,
+#p2p-guest-block textarea {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px;
+  background: #030603;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  resize: vertical;
+}
+
+.pchat-share-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.pchat-unavailable-note {
+  margin: 0;
+}
+
+/* JS不要のCSS onlyフルスクリーンウィンドウ(toolboxの .window + :target と同じ
+   仕組み。あちらはアプリ内容の動的読み込みにJSを使っているが、開閉そのものは
+   CSSのみで完結しているため、その部分だけをここでも踏襲する)。
+   :targetはCSS3の基本機能でIE9/Firefox初期版から対応しており、JSの各種APIより
+   ずっと古いブラウザまでカバーできる。 */
+.pchat-window {
+  display: none;
+  z-index: 90;
+}
+.pchat-window:target {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.pchat-window-inner {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  max-width: 720px;
+  padding: 60px 16px 40px;
+}
+.pchat-window-inner h2 {
+  margin-top: 0;
+  color: var(--green);
+  font-size: 15px;
+  font-family: var(--font-pixel);
+}
+.pchat-window-close {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 95;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--danger);
+  background: var(--bg);
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 16px;
+}
+.pchat-window-close:hover {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.pchat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+.pchat-modal {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  padding: 20px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.pchat-modal h3 {
+  margin: 0 0 12px;
+  color: var(--green);
+  font-size: 15px;
+  font-family: var(--font-pixel);
+}
+.pchat-modal-body {
+  margin-bottom: 14px;
+}
+.pchat-qr-image {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto 10px;
+  image-rendering: pixelated;
+  border: 1px solid var(--panel-border);
+}
+.pchat-scan-video {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  background: #000;
+}
+.pchat-audio-profile-select {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+.pchat-audio-profile-select span {
+  display: block;
+  margin-bottom: 4px;
+}
+.pchat-audio-profile-select select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pchat-audio-profile-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.pchat-audio-profile-table th,
+.pchat-audio-profile-table td {
+  border: 1px solid var(--panel-border);
+  padding: 5px 6px;
+  text-align: left;
+  color: var(--muted);
+}
+.pchat-audio-profile-table th {
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-weight: normal;
+}
+.pchat-audio-profile-table tr.pchat-audio-profile-row-selected td {
+  border-color: var(--cyan);
+  color: var(--text);
+}
+
+/* ---- 設定画面: 項目ごとにdivで区切り、余白を統一する ---- */
+.pchat-settings-item {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.pchat-settings-item:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+.pchat-settings-item h2 {
+  font-size: 14px;
+  margin: 0 0 6px;
+  font-family: var(--font-pixel);
+  color: var(--green);
+}
+.pchat-settings-item .note {
+  margin: 0 0 8px;
+}
+.pchat-settings-status {
+  margin: 6px 0 0;
+}
+
+/* 有効/無効のtrue/false反転トグル(文字ラベルの書き換えではなく、
+   スイッチそのものの状態で表す)。 */
+.pchat-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pchat-toggle-label {
+  font-size: 13px;
+  color: var(--text);
+}
+.pchat-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: #030603;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.pchat-toggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s, background-color 0.15s;
+}
+.pchat-toggle[aria-pressed="true"] {
+  background: var(--green);
+  border-color: var(--green);
+}
+.pchat-toggle[aria-pressed="true"]::before {
+  transform: translateX(20px);
+  background: #04150a;
+}
+.pchat-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* =====================================================================
+   下ナビゲーション: 「アーケード操作パネル」
+   一般的な均等3分割のアイコン+ラベルではなく、役割ごとに色の違う太い枠線
+   ボタンを並べた、ゲーム基板の操作パネル風のナビゲーション。
+   JSは一切使わず、既存の #pchat-window-* という:targetの仕組みへの
+   リンクを並べているだけ(JS無しでも今まで通り操作できる)。
+   ===================================================================== */
+.pchat-arcade-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--panel);
+  border-top: 2px solid var(--panel-border);
+}
+.pchat-arcade-nav a {
+  --nav-color: var(--green);
+  position: relative;
+  flex: 1;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 2px solid var(--nav-color);
+  border-radius: 999px;
+  color: var(--nav-color);
+  text-decoration: none;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  background: transparent;
+  transition: background 0.1s, box-shadow 0.1s;
+}
+.pchat-arcade-nav a .pchat-nav-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.pchat-arcade-nav a:nth-child(1) { --nav-color: var(--green); }
+.pchat-arcade-nav a:nth-child(2) { --nav-color: var(--cyan); }
+.pchat-arcade-nav a:nth-child(3) { --nav-color: var(--magenta); }
+.pchat-arcade-nav a:nth-child(4) { --nav-color: var(--yellow); }
+
+/* :target先の画面を開いている間、対応するナビボタンを「押し込まれて発光」
+   させる。JSを使わず、:has()で対応するpchat-windowが:target状態かどうかを見る。
+   hrefは"./?mode=...#pchat-window-xxx"なので、末尾一致($=)で判定する
+   (完全一致(=)だと?mode=が付くhrefに一度もマッチしない)。 */
+.pchat-arcade-nav a:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body:has(#pchat-window-rooms:target) .pchat-arcade-nav a[href$="#pchat-window-rooms"],
+body:has(#pchat-window-invite:target) .pchat-arcade-nav a[href$="#pchat-window-invite"],
+body:has(#pchat-window-settings:target) .pchat-arcade-nav a[href$="#pchat-window-settings"],
+body:has(#pchat-window-products:target) .pchat-arcade-nav a[href$="#pchat-window-products"] {
+  background: var(--nav-color);
+  color: #04150a;
+  box-shadow: 0 0 12px var(--nav-color);
+}
+
+/* 未読等のインジケーター。丸い数字チップではなく、明滅するランプ表現にする。 */
+.pchat-nav-dot {
+  position: absolute;
+  top: 2px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 0 6px var(--yellow);
+  animation: pchat-blink 1.1s steps(1) infinite;
+}
+@keyframes pchat-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+
+@media (max-width: 480px) {
+  html {
+    /* 狭い画面ではheaderがログイン状態表示などで2行に折り返しやすいため広めに */
+    scroll-padding-top: 130px;
+  }
+  main {
+    padding: 12px 10px 20px;
+  }
+  .mode-panel {
+    padding: 12px;
+  }
+  .chat-message {
+    max-width: 92%;
+  }
+}
